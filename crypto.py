@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import string
+import base64
 
 flag_prefix = "flag"
 
@@ -15,9 +16,11 @@ flag_prefix = "flag"
 #cipher      = "ysqu ol lq1uxfpx3rxo5iol4ouxf"                              # keyboard2
 #cipher      = "tnys{yfxygrylvgex}"                                         # atbash & sub
 #cipher      = "}KccnYt!1NlPpu!zeE1{C+9pfrhLB_Fz~uGy4n"                     # rot13 & search_flag
-cipher      = "Èé¬ ÆòåóèÄïç¡ Ôèå æìáç éóº èêúãùäêúâêäãêëúëãõçéóäãèêùêóâäæò"# sub 128 | xor 128
+#cipher      = "Èé¬ ÆòåóèÄïç¡ Ôèå æìáç éóº èêúãùäêúâêäãêëúëãõçéóäãèêùêóâäæò"# sub 128 | xor 128
+cipher      = "mxWYntnZiVjMxEjY0kDOhZWZ4cjYxIGZwQmY2ATMxEzNlFjNl13X"       # reverse & base64
+#cipher      = "ysqu{6y980e0101e8qq361977eqe06508q3rt}"                     # keyboard2
 
-# 针对 flag 在开头的场景
+# 针对 flag 在开头的场景，将密文逐字节减去 "flag"，观察差值是否存在规律
 def sub(cipher, print_info = "sub"):
     print("--------" + print_info + "--------")
     for i in range(len(flag_prefix)):
@@ -32,7 +35,7 @@ def sub_bruteforce(cipher):
             cipher_sub += chr(abs(ord(cipher[j]) - i))
         search_flag(cipher_sub, "sub{0} may get flag".format(i))
 
-# 针对 flag 在开头的场景
+# 针对 flag 在开头的场景，将密文逐字节与 "flag" 异或，观察是否存在规律
 def xor(cipher, print_info = "xor"):
     print("--------" + print_info + "--------")
     for i in range(len(flag_prefix)):
@@ -47,6 +50,7 @@ def xor_bruteforce(cipher):
             cipher_xor += chr(ord(cipher[j]) ^ i)
         search_flag(cipher_xor, "xor{0} may get flag".format(i))
 
+# 26 个字母首尾互换
 def atbash(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info + "--------")
@@ -88,6 +92,33 @@ def search_flag(new_cipher, print_info):
             return
     print("--------" + print_info + "--------")
 
+def reverse_base64(cipher, print_info):
+    if ("" != print_info):
+        print("--------" + print_info + "--------")
+        reverse_cipher = cipher[::-1]
+    try:
+        print(base64.b64decode(reverse_cipher))
+    except:
+        print("base64 decode error")
+
+def reverse_base32(cipher, print_info):
+    if ("" != print_info):
+        print("--------" + print_info + "--------")
+    reverse_cipher = cipher[::-1]
+    try:
+        print(base64.b32decode(reverse_cipher))
+    except:
+        print("base32 decode error")
+
+def reverse_base16(cipher, print_info):
+    if ("" != print_info):
+        print("--------" + print_info + "--------")
+    reverse_cipher = cipher[::-1]
+    try:
+        print(base64.b16decode(reverse_cipher))
+    except:
+        print("base16 decode error")
+
 if __name__ == '__main__':
     sub(cipher)
     xor(cipher)
@@ -118,3 +149,7 @@ if __name__ == '__main__':
 
     sub_bruteforce(cipher)
     xor_bruteforce(cipher)
+
+    reverse_base64(cipher, "reverse & base64")
+    reverse_base32(cipher, "reverse & base32")
+    reverse_base16(cipher, "reverse & base16")
