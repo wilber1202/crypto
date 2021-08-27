@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+#from _typeshed import NoneType
 import uu
 import math
 import gmpy2
@@ -39,7 +40,9 @@ flag_prefix = "flag"
 #cipher      = "vbkq{Ty_Iye_Udyg_Gxkj_sc_Ytt_Olod_Mkockh?}"                 # odd even decode
 #cipher      = "ysqu{r4_s4g_4g_so_u3o}"                                     # keyboard2
 #cipher      = "Z25ka4BJeYF5fjtzf29/eIpxR4J5dVp5fk98jmCHj4hUlIJVmIWNnZeYpKk=" # base64 & sub
-cipher      = "EwzB3KQcFGnVmxPsPK8xBX9GMgR7RUFJcdXLtxKXM"                  # reverse & base58
+#cipher      = "EwzB3KQcFGnVmxPsPK8xBX9GMgR7RUFJcdXLtxKXM"                  # reverse & base58
+#cipher      = "NAXHDA33JGHWHJMFNOQWHU3NNSQVD3DBM5IH67J="                   # rot25 & base32
+cipher      = "AuRLycNEbtgu3VR1nTIj7dF2k39bxv"                             # rot20 & base58
 
 # 针对 flag 在开头的场景，将密文逐字节减去 "flag"，观察差值是否存在规律
 def sub(cipher, print_info = "sub"):
@@ -107,36 +110,42 @@ def keyboard2(cipher, print_info = ""):
     cipher_keyboard = str.translate(cipher, keyboard)
     return cipher_keyboard
 
-def search_flag(new_cipher, print_info):
-    for i in range(len(flag_prefix)):
-        if (-1 == new_cipher.find(flag_prefix[i])):
+def search_flag(new_cipher, print_info, type = "string"):
+    if (new_cipher is None):
+        return
+    prefix = flag_prefix
+    if ("bytes" == type):
+        prefix = flag_prefix.encode()
+    for i in range(len(prefix)):
+        if (-1 == new_cipher.find(prefix[i])):
             return
     print("--------" + print_info.center(30) + "--------: ", end = "")
     print(new_cipher)
 
+# 由于后续需扩展出嵌套解码，所以 base_decode 系列函数需直接返回解码结果，而不是仅打印
 def base91_decode(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        print(base91.decode(cipher))
+        return base91.decode(cipher)
     except:
-        print("base91 decode error")
+        return None
 
 def base85_decode(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        print(base64.b85decode(cipher))
+        return base64.b85decode(cipher)
     except:
-        print("base85 decode error")
+        return None
 
 def base64_decode(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        print(base64.b64decode(cipher))
+        return base64.b64decode(cipher)
     except:
-        print("base64 decode error")
+        return None
 
 def base62_decode(cipher, print_info = ""):
     if ("" != print_info):
@@ -154,62 +163,81 @@ def base62_decode(cipher, print_info = ""):
             y       = gmpy2.digits(gmpy2.mpz(number, 62), 16)
             pad     = y.zfill(outlen * 2)
             result  += binascii.unhexlify(pad.encode()).decode()
-        print(result)
+        return result
     except:
-        print("base62 decode error")
+        return None
 
 def base58_decode(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        print(base58.b58decode(cipher))
+        return base58.b58decode(cipher)
     except:
-        print("base58 decode error")
+        return None
 
 def base32_decode(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        print(base64.b32decode(cipher))
+        return base64.b32decode(cipher)
     except:
-        print("base32 decode error")
+        return None
 
 def base16_decode(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        print(base64.b16decode(reverse_cipher))
+        return base64.b16decode(cipher)
     except:
-        print("base16 decode error")
+        return None
 
 def base_decode(cipher):
-    base91_decode(cipher, "base91 decode")
-    base85_decode(cipher, "base85 decode")
-    base64_decode(cipher, "base64 decode")
-    base62_decode(cipher, "base62 decode")
-    base58_decode(cipher, "base58 decode")
-    base32_decode(cipher, "base32 decode")
-    base16_decode(cipher, "base16 decode")
+    print(base91_decode(cipher, "base91 decode"))
+    print(base85_decode(cipher, "base85 decode"))
+    print(base64_decode(cipher, "base64 decode"))
+    print(base62_decode(cipher, "base62 decode"))
+    print(base58_decode(cipher, "base58 decode"))
+    print(base32_decode(cipher, "base32 decode"))
+    print(base16_decode(cipher, "base16 decode"))
 
 def reverse_base_decode(cipher):
     reverse_cipher = cipher[::-1]
-    base91_decode(reverse_cipher, "reverse base91 decode")
-    base85_decode(reverse_cipher, "reverse base85 decode")
-    base64_decode(reverse_cipher, "reverse base64 decode")
-    base62_decode(reverse_cipher, "reverse base62 decode")
-    base58_decode(reverse_cipher, "reverse base58 decode")
-    base32_decode(reverse_cipher, "reverse base32 decode")
-    base16_decode(reverse_cipher, "reverse base16 decode")
+    print(base91_decode(reverse_cipher, "reverse base91 decode"))
+    print(base85_decode(reverse_cipher, "reverse base85 decode"))
+    print(base64_decode(reverse_cipher, "reverse base64 decode"))
+    print(base62_decode(reverse_cipher, "reverse base62 decode"))
+    print(base58_decode(reverse_cipher, "reverse base58 decode"))
+    print(base32_decode(reverse_cipher, "reverse base32 decode"))
+    print(base16_decode(reverse_cipher, "reverse base16 decode"))
 
 def swap_base_decode(cipher):
     swapcase_cipher = cipher.swapcase()
-    base91_decode(swapcase_cipher, "swap base91 decode")
-    base85_decode(swapcase_cipher, "swap base85 decode")
-    base64_decode(swapcase_cipher, "swap base64 decode")
-    base62_decode(swapcase_cipher, "swap base62 decode")
-    base58_decode(swapcase_cipher, "swap base58 decode")
-    base32_decode(swapcase_cipher, "swap base32 decode")
-    base16_decode(swapcase_cipher, "swap base16 decode")
+    print(base91_decode(swapcase_cipher, "swap base91 decode"))
+    print(base85_decode(swapcase_cipher, "swap base85 decode"))
+    print(base64_decode(swapcase_cipher, "swap base64 decode"))
+    print(base62_decode(swapcase_cipher, "swap base62 decode"))
+    print(base58_decode(swapcase_cipher, "swap base58 decode"))
+    print(base32_decode(swapcase_cipher, "swap base32 decode"))
+    print(base16_decode(swapcase_cipher, "swap base16 decode"))
+
+# 先 rot 再 base 解码，例如 M 加 1 变为 N，Z 加 1 变为 A
+def rot_base_decode(cipher):
+    for i in range(1, 26):
+        new_cipher = ""
+        for c in cipher:
+            if (c.isupper()):
+                new_cipher += chr((ord(c) - ord('A') + i) % 26 + ord('A'))
+            elif (c.islower()):
+                new_cipher += chr((ord(c) - ord('a') + i) % 26 + ord('a'))
+            else:
+                new_cipher += c
+        search_flag(base91_decode(new_cipher, ""), "add{0} & base91 may get flag".format(i), "bytes")
+        search_flag(base85_decode(new_cipher, ""), "add{0} & base85 may get flag".format(i), "bytes")
+        search_flag(base64_decode(new_cipher, ""), "add{0} & base64 may get flag".format(i), "bytes")
+        search_flag(base62_decode(new_cipher, ""), "add{0} & base62 may get flag".format(i), "bytes")
+        search_flag(base58_decode(new_cipher, ""), "add{0} & base58 may get flag".format(i), "bytes")
+        search_flag(base32_decode(new_cipher, ""), "add{0} & base32 may get flag".format(i), "bytes")
+        search_flag(base16_decode(new_cipher, ""), "add{0} & base16 may get flag".format(i), "bytes")
 
 # 在单字节范围内逆序，例如 663686e6 转换成 6663686e
 def reverse_binary(cipher, print_info):
@@ -305,6 +333,7 @@ if __name__ == '__main__':
     base_decode(cipher)
     reverse_base_decode(cipher)
     swap_base_decode(cipher)
+    rot_base_decode(cipher)
 
     reverse_binary(cipher, "to binary, then reverse")
 
