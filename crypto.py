@@ -64,8 +64,7 @@ flag_prefix = "flag"
 #cipher      = "X/o8VJQE1pyQhjmpcwk45+L069bivpF63PjZP4z7ahKaC+jv89NT6ze0T5id0lWC"
 #cipher      = "8nCDq36gzGn8hf4M2HJUsn4aYcYRBSJwj4aE0hbgpzHb4aHcH1zzC9C3IL" # base62
 #cipher      = "uozt{Zgyzhv_xlwv_uiln_xguhsld}"                             # atbash
-#cipher      = "AVZHSM{91m4t51vv33h5m18o93t6o4hv86at87v}"
-cipher      = "sp$r%uLbdagaeaec`bf7f76dga6h74dc26hch_fN"
+cipher      = "AVZHSM{91m4t51vv33h5m18o93t6o4hv86at87v}"
 
 # 针对 flag 在开头的场景，将密文逐字节减去 "flag"，观察差值是否存在规律
 def sub(cipher, print_info = "sub"):
