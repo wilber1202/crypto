@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 #from _typeshed import NoneType
 import uu
+import re
 import math
 import gmpy2
 import string
@@ -10,23 +11,31 @@ import base58
 import base64
 import base91
 import binascii
+from pycipher import Affine
 from codecs import decode, encode
+from pycipher.base import Cipher
+from ngram_score import ngram_score
 
 flag_prefix = "flag"
 #flag_prefix = "TUCTF"
+#flag_prefix = "mfctf"
 
 #cipher      = "ch\\at]ZW+S$)6Q#k"                                          # sub
 #cipher      = "gndk€rlqhmtkwwp}z"                                          # sub
 #cipher      = "afZ_r9VYfScOeO_UL^RWUc"                                     # sub
+#cipher      = "h`\l]q8UXeRbNdN^TK]QVTb"                                    # sub, flag_prefix = "mfctf"
 #cipher      = "&-#$-6$v"                                                   # xor
 #cipher      = "cbtcqLUBChERV[[Nh@_X^D]X_YPV[CJ"                            # xor55 - TUCTF
 #cipher      = "uozt{zgyzhs_gvhg}"                                          # atbash
 #cipher      = "synt{ebg13_grfg}"                                           # rot13
+#cipher      = "synt{5pq1004q-86n5-46q8-o720-oro5on0417r1}"                 # rot13
 #cipher      = "MzkuM3gvMUAwnzuvn3cgozMlMTuvqzAenJchMUAeqzWenzEmLJW9"       # rot13 + base64
 #cipher      = "7=28LC@Ecf0E6DEN"                                           # rot47
+#cipher      = "7=28LE9:D0>2J092AA6?0:?0:?5FDEC:2=04@?EC@=06BF:A>6?EN"      # rot47
 #cipher      = "ypau_kjg;\"g;\"ypau+"                                       # keyboard1
 #cipher      = "ysqu ol lq1uxfpx3rxo5iol4ouxf"                              # keyboard2
 #cipher      = "ysqu{6y980e0101e8qq361977eqe06508q3rt}"                     # keyboard2
+#cipher      = "CTKQEKNHZHQLLVGKROLATNWGQKRRKQGWNTA"                        # keyboard2
 #cipher      = "tnys{yfxygrylvgex}"                                         # atbash & sub
 #cipher      = "}KccnYt!1NlPpu!zeE1{C+9pfrhLB_Fz~uGy4n"                     # rot13 & search_flag
 #cipher      = "Èé¬ ÆòåóèÄïç¡ Ôèå æìáç éóº èêúãùäêúâêäãêëúëãõçéóäãèêùêóâäæò"# sub 128 | xor 128
@@ -42,7 +51,21 @@ flag_prefix = "flag"
 #cipher      = "Z25ka4BJeYF5fjtzf29/eIpxR4J5dVp5fk98jmCHj4hUlIJVmIWNnZeYpKk=" # base64 & sub
 #cipher      = "EwzB3KQcFGnVmxPsPK8xBX9GMgR7RUFJcdXLtxKXM"                  # reverse & base58
 #cipher      = "NAXHDA33JGHWHJMFNOQWHU3NNSQVD3DBM5IH67J="                   # rot25 & base32
-cipher      = "AuRLycNEbtgu3VR1nTIj7dF2k39bxv"                             # rot20 & base58
+#cipher      = "NAXHDA33JGHWHJMFNOQWHU3NNSQVD3DBM5IH67J"                    # rot25 & base32
+#cipher      = "AuRLycNEbtgu3VR1nTIj7dF2k39bxv"                             # rot20 & base58
+#cipher      = "QUVNLAUVILZKVZZZVNHIVQUFSFZHWZQLQHQLJSNLAUVI"               # affine
+#cipher      = "HWWFUTFJSTGBZXXQ"                                           # affine
+#cipher      = "e6ece1e7fbb8b4b5e2e6b9e5b7e3e6e4e4b8b5e5b8b7e3b3b5b8b6b7b3b5e1e1e4e5e6e4b1fd"   # unhexlify & sub
+#cipher      = "vbqw{7ur61r29-8v38-40st-8us5-50q3v1v9t8r8}"                 # odd even decode
+#cipher      = "mZOemIStmomajYyaoL2/jJqgycuC"                               # reverse table base64
+#cipher      = "TGJZ5GEERWNITGUNRSNKBHN7ZTG2BG42TSIJXGUC"                   # reverse table base32
+#cipher      = ">9FQA9WM)='-?;F]T7VAA<F1?=&]?86-H:65V97T`"                  # uuencode
+#cipher      = "mkfd{fmmlsvnlauvilzvfzxlswihqv}"                            # affine
+#cipher      = "X/o8VJQE1pyQhjmpcwk45+L069bivpF63PjZP4z7ahKaC+jv89NT6ze0T5id0lWC"
+#cipher      = "8nCDq36gzGn8hf4M2HJUsn4aYcYRBSJwj4aE0hbgpzHb4aHcH1zzC9C3IL" # base62
+#cipher      = "uozt{Zgyzhv_xlwv_uiln_xguhsld}"                             # atbash
+#cipher      = "AVZHSM{91m4t51vv33h5m18o93t6o4hv86at87v}"
+cipher      = "sp$r%uLbdagaeaec`bf7f76dga6h74dc26hch_fN"
 
 # 针对 flag 在开头的场景，将密文逐字节减去 "flag"，观察差值是否存在规律
 def sub(cipher, print_info = "sub"):
@@ -55,8 +78,8 @@ def sub(cipher, print_info = "sub"):
 def sub_bruteforce(cipher):
     for i in range(1, 255):
         cipher_sub = ""
-        for j in range(len(cipher)):
-            cipher_sub += chr(abs(ord(cipher[j]) - i))
+        for c in cipher:
+            cipher_sub += chr(abs(ord(c) - i))
         search_flag(cipher_sub, "sub{0} may get flag".format(i))
 
 # 针对 flag 在开头的场景，将密文逐字节与 "flag" 异或，观察是否存在规律
@@ -70,8 +93,8 @@ def xor(cipher, print_info = "xor"):
 def xor_bruteforce(cipher):
     for i in range(0, 255):
         cipher_xor = ""
-        for j in range(len(cipher)):
-            cipher_xor += chr(ord(cipher[j]) ^ i)
+        for c in cipher:
+            cipher_xor += chr(ord(c) ^ i)
         search_flag(cipher_xor, "xor{0} may get flag".format(i))
 
 # 26 个字母首尾互换
@@ -100,14 +123,14 @@ def keyboard1(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     keyboard        = str.maketrans("qwertyuiopasdfghjkl;\"zxcvbnm+_", "\"<>pyfgcrlaoeuidhtns_;qjkxbm}{")
-    cipher_keyboard = str.translate(cipher, keyboard)
+    cipher_keyboard = str.translate(cipher.lower(), keyboard)
     return cipher_keyboard
 
 def keyboard2(cipher, print_info = ""):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     keyboard        = str.maketrans("qwertyuiopasdfghjklzxcvbnm", "abcdefghijklmnopqrstuvwxyz")
-    cipher_keyboard = str.translate(cipher, keyboard)
+    cipher_keyboard = str.translate(cipher.lower(), keyboard)
     return cipher_keyboard
 
 def search_flag(new_cipher, print_info, type = "string"):
@@ -139,11 +162,18 @@ def base85_decode(cipher, print_info = ""):
     except:
         return None
 
-def base64_decode(cipher, print_info = ""):
+def base64_decode(cipher, print_info = "", reverse_table = False):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        return base64.b64decode(cipher)
+        if (0 != len(cipher) % 4):
+            padding = '=' * (4 - len(cipher) % 4)
+            cipher  = cipher + padding
+        if (False == reverse_table):
+            return base64.b64decode(cipher)
+        else:
+            base64_table_reverse = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", "/+9876543210zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA")
+            return base64.b64decode(cipher.translate(base64_table_reverse))
     except:
         return None
 
@@ -175,11 +205,18 @@ def base58_decode(cipher, print_info = ""):
     except:
         return None
 
-def base32_decode(cipher, print_info = ""):
+def base32_decode(cipher, print_info = "", reverse_table = False):
     if ("" != print_info):
         print("--------" + print_info.center(30) + "--------: ", end = "")
     try:
-        return base64.b32decode(cipher)
+        if (0 != len(cipher) % 5):
+            padding = '=' * (5 - len(cipher) % 5)
+            cipher  = cipher + padding
+        if (False == reverse_table):
+            return base64.b32decode(cipher)
+        else:
+            base32_table_reverse = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "765432ZYXWVUTSRQPONMLKJIHGFEDCBA")
+            return base64.b32decode(cipher.translate(base32_table_reverse))
     except:
         return None
 
@@ -220,6 +257,10 @@ def swap_base_decode(cipher):
     print(base32_decode(swapcase_cipher, "swap base32 decode"))
     print(base16_decode(swapcase_cipher, "swap base16 decode"))
 
+def reverse_table_base_decode(cipher):
+    print(base64_decode(cipher, "reverse table base64 decode", True))
+    print(base32_decode(cipher, "reverse table base32 decode", True))
+
 # 先 rot 再 base 解码，例如 M 加 1 变为 N，Z 加 1 变为 A
 def rot_base_decode(cipher):
     for i in range(1, 26):
@@ -231,13 +272,13 @@ def rot_base_decode(cipher):
                 new_cipher += chr((ord(c) - ord('a') + i) % 26 + ord('a'))
             else:
                 new_cipher += c
-        search_flag(base91_decode(new_cipher, ""), "add{0} & base91 may get flag".format(i), "bytes")
-        search_flag(base85_decode(new_cipher, ""), "add{0} & base85 may get flag".format(i), "bytes")
-        search_flag(base64_decode(new_cipher, ""), "add{0} & base64 may get flag".format(i), "bytes")
-        search_flag(base62_decode(new_cipher, ""), "add{0} & base62 may get flag".format(i), "bytes")
-        search_flag(base58_decode(new_cipher, ""), "add{0} & base58 may get flag".format(i), "bytes")
-        search_flag(base32_decode(new_cipher, ""), "add{0} & base32 may get flag".format(i), "bytes")
-        search_flag(base16_decode(new_cipher, ""), "add{0} & base16 may get flag".format(i), "bytes")
+        search_flag(base91_decode(new_cipher, ""), "rot{0} & base91 may get flag".format(i), "bytes")
+        search_flag(base85_decode(new_cipher, ""), "rot{0} & base85 may get flag".format(i), "bytes")
+        search_flag(base64_decode(new_cipher, ""), "rot{0} & base64 may get flag".format(i), "bytes")
+        search_flag(base62_decode(new_cipher, ""), "rot{0} & base62 may get flag".format(i), "bytes")
+        search_flag(base58_decode(new_cipher, ""), "rot{0} & base58 may get flag".format(i), "bytes")
+        search_flag(base32_decode(new_cipher, ""), "rot{0} & base32 may get flag".format(i), "bytes")
+        search_flag(base16_decode(new_cipher, ""), "rot{0} & base16 may get flag".format(i), "bytes")
 
 # 在单字节范围内逆序，例如 663686e6 转换成 6663686e
 def reverse_binary(cipher, print_info):
@@ -299,6 +340,24 @@ def odd_even_decode(cipher, print_info):
             result += c
     print(result)
 
+def affine_decode(cipher):
+    print("--------" + "affine decode".center(30) + "--------: ", end = "")
+    # load our quadgram statistics
+    fitness = ngram_score('quadgrams.txt')
+    # make sure ciphertext has all spacing/punc removed and is uppercase
+    ctext   = re.sub('[^A-Z]', '', cipher.upper())
+    # try all posiible keys, return the one with the highest fitness
+    scores  = []
+    for i in [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25]:
+        scores.extend([(fitness.score(Affine(i, j).decipher(ctext)), (i, j)) for j in range(0, 25)])
+    max_key = max(scores)
+    print("key (a,b) = " + str(max_key[1]) + ", ", Affine(max_key[1][0], max_key[1][1]).decipher(ctext))
+
+def unhexlify(cipher):
+    unhex_cipher = binascii.unhexlify(cipher)
+    sub_bruteforce(unhex_cipher)
+    xor_bruteforce(unhex_cipher)
+
 if __name__ == '__main__':
     sub(cipher)
     xor(cipher)
@@ -314,6 +373,7 @@ if __name__ == '__main__':
     sub(rot47(cipher), "rot47 & sub")
     sub(keyboard1(cipher), "keyboard1 & sub")
     sub(keyboard2(cipher), "keyboard2 & sub")
+    #sub(base64_decode(cipher), "base64 & sub") # 可能会报错
 
     xor(atbash(cipher), "atbash & xor")
     xor(rot13(cipher), "rot13 & xor")
@@ -329,14 +389,18 @@ if __name__ == '__main__':
 
     sub_bruteforce(cipher)
     xor_bruteforce(cipher)
+    #unhexlify(cipher)
 
     base_decode(cipher)
     reverse_base_decode(cipher)
     swap_base_decode(cipher)
     rot_base_decode(cipher)
+    reverse_table_base_decode(cipher)
 
     reverse_binary(cipher, "to binary, then reverse")
 
     uu_decode(cipher, "uu decode")
     vbs_decode(cipher, "vbs decode")
     odd_even_decode(cipher, "odd even decode")
+
+    affine_decode(cipher)
